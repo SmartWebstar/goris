@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/tanaikech/goris/ris"
-	"github.com/urfave/cli"
+	"github.com/pastelnetwork/goris/ris"
+	"github.com/urfave/cli/v2"
 )
 
 const (

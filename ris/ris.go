@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/mxschmitt/playwright-go"
 )
 
 const (
@@ -66,28 +67,29 @@ func (r *requestParams) fetchURL() (*http.Response, error) {
 }
 
 // getURLs : Retrieve URLs.
-func (r *requestParams) getURLs(res *http.Response, imWebPage bool) ([]string, error) {
+func (r *requestParams) getURLs(content string, imWebPage bool) ([]string, error) {
 	var url string
 	var chk bool
 	var ar []string
-	doc, err := goquery.NewDocumentFromResponse(res)
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(content))
 	if err != nil {
 		return nil, err
 	}
 	doc.Find("g-section-with-header").Each(func(_ int, s *goquery.Selection) {
-		url, chk = s.Find("div").Find("h3").Find("a").Attr("href")
+		url, chk = s.Find("div").Find("title-with-lhs-icon").Find("a").Attr("href")
 		if !chk {
 			fmt.Fprint(os.Stderr, "Error: Base URL cannot be retrieved. The specification of Google side might be changed.\n")
 			os.Exit(1)
 		}
 	})
-	r.URL = baseurl + url
-	r.Client = &http.Client{Timeout: time.Duration(10) * time.Second}
-	res, err = r.fetchURL()
+
+	imagesPageContent, err := loadWebPageContent(baseurl + url)
 	if err != nil {
 		return nil, err
 	}
-	doc, err = goquery.NewDocumentFromResponse(res)
+
+	doc, err = goquery.NewDocumentFromReader(strings.NewReader(imagesPageContent))
 	if err != nil {
 		return nil, err
 	}
@@ -122,6 +124,32 @@ func (r *requestParams) getURLs(res *http.Response, imWebPage bool) ([]string, e
 	return ar, nil
 }
 
+func loadWebPageContent(url string) (string, error) {
+	pw, err := playwright.Run()
+	if err != nil {
+		return "", err
+	}
+	browser, err := pw.Chromium.Launch()
+	if err != nil {
+		return "", err
+	}
+	page, err := browser.NewPage()
+	if err != nil {
+		return "", err
+	}
+
+	if _, err = page.Goto(url); err != nil {
+		return "", err
+	}
+
+	pageMainFrameContent, err := page.MainFrame().Content()
+	if err != nil {
+		return "", err
+	}
+
+	return pageMainFrameContent, nil
+}
+
 // ImgFromURL : Search images from an image URL
 func (im *Imgdata) ImgFromURL(searchimage string) ([]string, error) {
 	var err error
@@ -134,19 +162,13 @@ func (im *Imgdata) ImgFromURL(searchimage string) ([]string, error) {
 			CheckRedirect: func(req *http.Request, via []*http.Request) error { return errors.New("Redirect") },
 		},
 	}
-	var res *http.Response
-	for {
-		res, err = r.fetchURL()
-		if err != nil {
-			return nil, err
-		}
-		if res.StatusCode == 200 {
-			break
-		}
-		reurl, _ := res.Location()
-		r.URL = reurl.String()
+	content, err := loadWebPageContent(baseurl + "/searchbyimage?&image_url=" + searchimage)
+	if err != nil {
+		return nil, err
 	}
-	ar, err := r.getURLs(res, im.WebPage)
+	os.WriteFile("resolved.html", []byte(content), 0644)
+
+	ar, err := r.getURLs(content, im.WebPage)
 	if err != nil {
 		return nil, err
 	}
@@ -182,21 +204,21 @@ func (im *Imgdata) ImgFromFile(file string) ([]string, error) {
 		Contenttype: w.FormDataContentType(),
 	}
 	var res *http.Response
-	for {
-		res, err = r.fetchURL()
-		if err != nil {
-			return nil, err
-		}
-		if res.StatusCode == 200 {
-			break
-		}
-		reurl, _ := res.Location()
-		r.URL = reurl.String()
-		r.Method = "GET"
-		r.Data = nil
-		r.Contenttype = ""
+	res, err = r.fetchURL()
+	if err != nil {
+		return nil, err
 	}
-	ar, err := r.getURLs(res, im.WebPage)
+	if res.StatusCode != 302 {
+		return nil, errors.New("redirect is expected")
+	}
+	reurl, _ := res.Location()
+	resultsPageURL := reurl.String()
+	content, err := loadWebPageContent(resultsPageURL)
+	if err != nil {
+		return nil, err
+	}
+
+	ar, err := r.getURLs(content, im.WebPage)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,5 @@
 # goris
 
-[![Build Status](https://travis-ci.org/tanaikech/goris.svg?branch=master)](https://travis-ci.org/tanaikech/goris)
 [![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENCE)
 
 <a name="TOP"></a>
@@ -15,14 +14,10 @@ Images can be searched by image files and image URLs. Searched images display UR
 
 # How to Install
 
-Download an executable file from [the release page](https://github.com/tanaikech/goris/releases) and put to a directory with path.
-
-or
-
 Use go get.
 
 ```bash
-$ go get -u github.com/tanaikech/goris
+$ go get -u github.com/pastelnetwork/goris
 ```
 
 # Usage
@@ -90,7 +85,7 @@ If you have any questions and commissions for me, feel free to tell me using e-m
 
 - v1.1.1 (January 3, 2020)
 
-  1. It seems that the specification of `github.com/urfave/cli` was changed by the update of [https://github.com/urfave/cli](https://github.com/urfave/cli). By this, when `go get -u github.com/tanaikech/goris` is run, an error occurred. So this error was removed.
+  1. It seems that the specification of `github.com/urfave/cli` was changed by the update of [https://github.com/urfave/cli](https://github.com/urfave/cli). By this, when `go get -u github.com/pastelnetwork/goris` is run, an error occurred. So this error was removed.
 
 <a name="v200"></a>
 

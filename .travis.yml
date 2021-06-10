@@ -1,5 +1,5 @@
 language: go
 install:
- - go get github.com/tanaikech/goris
+ - go get github.com/pastelnetwork/goris
 script:
  - go test -v
